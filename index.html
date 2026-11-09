@@ -1,0 +1,369 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M Report</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f0f5f8;font-family:Arial;color:#183447}
+header{background:#123e59;color:white;padding:22px;text-align:center}
+header h1{margin:0;font-size:29px}
+header p{margin:6px 0 0;font-size:13px}
+main{padding:12px;max-width:750px;margin:auto}
+.card{background:white;padding:15px;border-radius:13px;margin-bottom:13px;box-shadow:0 2px 9px #0001}
+h2{font-size:18px;color:#14516d;margin-top:0}
+label{font-size:13px;font-weight:bold;display:block;margin:10px 0 5px}
+input,select,textarea{width:100%;padding:11px;border:1px solid #cbd8df;border-radius:8px;font-size:15px}
+button{padding:12px;border:0;border-radius:8px;background:#087d9e;color:white;font-weight:bold;margin:5px 3px;cursor:pointer}
+.secondary{background:#e2f1f5;color:#14516d}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:7px 3px;border-bottom:1px solid #ddd;text-align:left}
+td input{padding:7px;min-width:65px;font-size:12px}
+.tablebox{overflow-x:auto}
+#preview{background:white;padding:12px}
+.reporthead{text-align:center;border-bottom:2px solid #123e59;padding-bottom:10px}
+.reporthead h2{font-size:22px;margin:5px}
+.info{display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px;margin:15px 0}
+.small{font-size:11px;color:#647784}
+@media print{
+ header,.no-print,#formCard,#testCard{display:none!important}
+ body{background:white}
+ main{padding:0}
+ .card{box-shadow:none}
+}
+</style>
+</head> 
+<body>
+
+<header>
+<h1>M REPORT</h1>
+<p>ADVANCED DIAGNOSTIC LABORATORY</p>
+</header>
+
+<main>
+
+<section class="card" id="formCard">
+<h2>Patient Details</h2>
+
+<label>Patient Name</label>
+<input id="name" placeholder="Enter patient name">
+
+<label>Patient ID</label>
+<input id="pid" placeholder="Patient ID">
+
+<label>Age</label>
+<input id="age" placeholder="Age">
+
+<label>Gender</label>
+<select id="gender">
+<option value="">Select Gender</option>
+<option>Male</option>
+<option>Female</option>
+<option>Other</option>
+</select>
+
+<label>Report Date</label>
+<input type="date" id="date">
+
+<label>Doctor Name</label>
+<input id="doctor" placeholder="Ref. Doctor">
+
+<label>Laboratory Name</label>
+<input id="lab" value="M REPORT DIAGNOSTIC LAB">
+</section>
+
+<section class="card" id="testCard">
+<h2>Select Laboratory Test</h2>
+
+<select id="test" onchange="loadTests()">
+<option value="CBC">CBC</option>
+<option value="LFT">LFT</option>
+<option value="KFT">KFT</option>
+<option value="Sugar">Blood Sugar</option>
+<option value="Lipid Profile">Lipid Profile</option>
+<option value="Electrolytes">Electrolytes</option>
+<option value="Thyroid">Thyroid Profile</option>
+<option value="Urine R/M">Urine R/M</option>
+</select>
+
+<div class="tablebox">
+<table>
+<thead>
+<tr>
+<th>Test Name</th>
+<th>Result</th>
+<th>Unit</th>
+<th>Reference Range</th>
+</tr>
+</thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+
+<button class="secondary" onclick="addTest()">+ Add Test</button>
+<button onclick="generate()">Generate Report</button>
+
+<p class="small">
+Enter results only after laboratory testing. Reference ranges must be verified against the laboratory's validated method.
+</p>
+</section>
+
+<section class="card">
+<h2>Remarks</h2>
+<textarea id="remarks" rows="3" placeholder="Additional remarks"></textarea>
+</section>
+
+<section class="card" id="previewCard">
+<h2 class="no-print">Report Preview</h2>
+
+<div id="preview">
+<div class="reporthead">
+<h2 id="outLab">M REPORT DIAGNOSTIC LAB</h2>
+<p>LABORATORY REPORT</p>
+</div>
+
+<div class="info">
+<div><b>Name:</b> <span id="outName">-</span></div>
+<div><b>ID:</b> <span id="outId">-</span></div>
+<div><b>Age:</b> <span id="outAge">-</span></div>
+<div><b>Gender:</b> <span id="outGender">-</span></div>
+<div><b>Date:</b> <span id="outDate">-</span></div>
+<div><b>Doctor:</b> <span id="outDoctor">-</span></div>
+</div>
+
+<h3 id="outTest">CBC REPORT</h3>
+
+<div class="tablebox">
+<table>
+<thead>
+<tr>
+<th>Investigation</th>
+<th>Result</th>
+<th>Unit</th>
+<th>Reference Range</th>
+</tr>
+</thead>
+<tbody id="outRows"></tbody>
+</table>
+</div>
+
+<p><b>Remarks:</b> <span id="outRemarks">-</span></p>
+
+<div style="display:flex;justify-content:space-between;margin-top:50px;font-size:12px">
+<span>Lab Technician</span>
+<span>Authorized Signatory</span>
+</div>
+<p class="small" style="text-align:center;margin-top:25px">
+Computer generated report. Results require authorized review.
+</p>
+</div>
+
+<div class="no-print">
+<button onclick="window.print()">Print / Save PDF</button>
+<button class="secondary" onclick="saveRecord()">Save Record</button>
+<button class="secondary" onclick="showRecords()">Saved Records</button>
+</div>
+
+<div id="saved" class="no-print"></div>
+</section>
+</main>
+
+<script>
+const data={
+CBC:[
+["Hemoglobin","","g/dL","Lab validated range"],
+["RBC Count","","million/µL","Lab validated range"],
+["WBC Count","","/µL","Lab validated range"],
+["Platelet Count","","/µL","Lab validated range"],
+["HCT / PCV","","%","Lab validated range"],
+["MCV","","fL","Lab validated range"],
+["MCH","","pg","Lab validated range"],
+["MCHC","","g/dL","Lab validated range"],
+["Neutrophils","","%","Lab validated range"],
+["Lymphocytes","","%","Lab validated range"],
+["Monocytes","","%","Lab validated range"],
+["Eosinophils","","%","Lab validated range"],
+["Basophils","","%","Lab validated range"]
+],
+LFT:[
+["Total Bilirubin","","mg/dL","Lab validated range"],
+["Direct Bilirubin","","mg/dL","Lab validated range"],
+["Indirect Bilirubin","","mg/dL","Lab validated range"],
+["SGOT / AST","","U/L","Lab validated range"],
+["SGPT / ALT","","U/L","Lab validated range"],
+["ALP","","U/L","Lab validated range"],
+["Total Protein","","g/dL","Lab validated range"],
+["Albumin","","g/dL","Lab validated range"],
+["Globulin","","g/dL","Lab validated range"],
+["A/G Ratio","","","Lab validated range"]
+],
+KFT:[
+["Urea","","mg/dL","Lab validated range"],
+["Creatinine","","mg/dL","Lab validated range"],
+["Uric Acid","","mg/dL","Lab validated range"],
+["BUN","","mg/dL","Lab validated range"]
+],
+Sugar:[
+["Fasting Sugar","","mg/dL","Lab validated range"],
+["PP Sugar","","mg/dL","Lab validated range"],
+["Random Sugar","","mg/dL","Lab validated range"]
+],
+"Lipid Profile":[
+["Total Cholesterol","","mg/dL","Lab validated range"],
+["Triglycerides","","mg/dL","Lab validated range"],
+["HDL","","mg/dL","Lab validated range"],
+["LDL","","mg/dL","Lab validated range"],
+["VLDL","","mg/dL","Lab validated range"]
+],
+Electrolytes:[
+["Sodium","","mmol/L","Lab validated range"],
+["Potassium","","mmol/L","Lab validated range"],
+["Chloride","","mmol/L","Lab validated range"]
+],
+Thyroid:[
+["T3","","ng/mL","Lab validated range"],
+["T4","","µg/dL","Lab validated range"],
+["TSH","","µIU/mL","Lab validated range"]
+],
+"Urine R/M":[
+["Colour","","","Lab validated reference"],
+["Appearance","","","Lab validated reference"],
+["pH","","","Lab validated reference"],
+["Specific Gravity","","","Lab validated reference"],
+["Protein","","","Lab validated reference"],
+["Glucose","","","Lab validated reference"],
+["Ketones","","","Lab validated reference"],
+["Pus Cells","","/HPF","Lab validated reference"],
+["RBC","","/HPF","Lab validated reference"],
+["Epithelial Cells","","/HPF","Lab validated reference"],
+["Casts","","","Lab validated reference"],
+["Crystals","","","Lab validated reference"]
+]
+};
+
+function addTest(name="",result="",unit="",range=""){
+let tr=document.createElement("tr");
+[name,result,unit,range].forEach((value)=>{
+let td=document.createElement("td");
+let input=document.createElement("input");
+input.value=value;
+td.appendChild(input);
+tr.appendChild(td);
+});
+document.getElementById("rows").appendChild(tr);
+}
+
+function loadTests(){
+document.getElementById("rows").innerHTML="";
+(data[document.getElementById("test").value]||[]).forEach(r=>addTest(...r));
+}
+
+function getRows(){
+return [...document.querySelectorAll("#rows tr")].map(tr=>
+[...tr.querySelectorAll("input")].map(i=>i.value)
+);
+}
+
+function generate(){
+let name=document.getElementById("name").value.trim();
+if(!name){alert("Enter Patient Name");return;}
+
+const val=id=>document.getElementById(id).value;
+document.getElementById("outLab").textContent=val("lab");
+document.getElementById("outName").textContent=name;
+document.getElementById("outId").textContent=val("pid")||"-";
+document.getElementById("outAge").textContent=val("age")||"-";
+document.getElementById("outGender").textContent=val("gender")||"-";
+document.getElementById("outDate").textContent=val("date")||"-";
+document.getElementById("outDoctor").textContent=val("doctor")||"-";
+document.getElementById("outTest").textContent=val("test")+" REPORT";
+document.getElementById("outRemarks").textContent=val("remarks")||"-";
+
+let tbody=document.getElementById("outRows");
+tbody.innerHTML="";
+getRows().forEach(r=>{
+let tr=document.createElement("tr");
+r.forEach(v=>{
+let td=document.createElement("td");
+td.textContent=v||"-";
+tr.appendChild(td);
+});
+tbody.appendChild(tr);
+});
+document.getElementById("previewCard").scrollIntoView();
+}
+
+function saveRecord(){
+if(!document.getElementById("name").value.trim()){
+alert("Enter Patient Name");return;
+}
+let records=JSON.parse(localStorage.getItem("mreport")||"[]");
+records.unshift({
+name:document.getElementById("name").value,
+id:document.getElementById("pid").value,
+age:document.getElementById("age").value,
+gender:document.getElementById("gender").value,
+date:document.getElementById("date").value,
+doctor:document.getElementById("doctor").value,
+lab:document.getElementById("lab").value,
+test:document.getElementById("test").value,
+remarks:document.getElementById("remarks").value,
+rows:getRows()
+});
+localStorage.setItem("mreport",JSON.stringify(records.slice(0,100)));
+alert("Record Saved");
+}
+
+function showRecords(){
+let records=JSON.parse(localStorage.getItem("mreport")||"[]");
+let box=document.getElementById("saved");
+box.innerHTML="<h3>Saved Records</h3>";
+records.forEach((r,i)=>{
+let div=document.createElement("div");
+div.style.padding="10px";
+div.style.borderBottom="1px solid #ddd";
+let title=document.createElement("b");
+title.textContent=r.name+" - "+r.test+" - "+r.date;
+let btn=document.createElement("button");
+btn.textContent="Open";
+btn.onclick=()=>openRecord(i);
+div.append(title,btn);
+box.appendChild(div);
+});
+if(!records.length)box.textContent="No saved records";
+}
+
+function openRecord(i){
+let r=JSON.parse(localStorage.getItem("mreport")||"[]")[i];
+if(!r)return;
+document.getElementById("name").value=r.name;
+document.getElementById("pid").value=r.id;
+document.getElementById("age").value=r.age;
+document.getElementById("gender").value=r.gender;
+document.getElementById("date").value=r.date;
+document.getElementById("doctor").value=r.doctor;
+document.getElementById("lab").value=r.lab;
+document.getElementById("test").value=r.test;
+document.getElementById("remarks").value=r.remarks;
+document.getElementById("rows").innerHTML="";
+r.rows.forEach(row=>addTest(...row));
+generate();
+}
+
+document.getElementById("date").value=new Date().toISOString().slice(0,10);
+loadTests();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js")
+      .then(() => console.log("M Report is ready!"))
+      .catch(error => console.log("Service Worker Error:", error));
+  });
+}
+</script>
+</body>
+</html>
